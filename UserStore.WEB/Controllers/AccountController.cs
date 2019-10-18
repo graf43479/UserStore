@@ -72,21 +72,28 @@ namespace UserStore.WEB.Controllers
                 }
                 else
                 {
-                    AuthenticationManager.SignOut();
-                    AuthenticationManager.SignIn(new AuthenticationProperties
+                    bool isConfirmed = await service.IsEmailConfirmedAsync(userDto);
+                    if(isConfirmed)
                     {
-                        IsPersistent = true
-                    }, claim);
+                        AuthenticationManager.SignOut();
+                        AuthenticationManager.SignIn(new AuthenticationProperties
+                        {
+                            IsPersistent = true
+                        }, claim);
 
-                    if (String.IsNullOrEmpty(returnUrl))
-                    {
-                        RedirectToAction("Index", "Home");
+                        if (String.IsNullOrEmpty(returnUrl))
+                        {
+                            RedirectToAction("Index", "Home");
+                        }
+                        else
+                        {
+                            Redirect(returnUrl);
+                        }
                     }
                     else
                     {
-                        Redirect(returnUrl);
-                    }                    
-                    
+                       ModelState.AddModelError("", "Пользователь не активизирован");
+                    }
                 }
             }
             return View(model);
@@ -129,6 +136,21 @@ namespace UserStore.WEB.Controllers
             }
             return View(model);
         }
+
+
+        [AllowAnonymous]
+        public async Task<ActionResult> ConfirmEmail(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                return View("Error");
+            }
+            //var result = await service.ConfirmEmailAsync(userId, code);
+            OperationDetails result = new OperationDetails(true, "","");
+            return View(result.Succedeed ? "ConfirmEmail" : "Error");
+        }
+
+
         private async Task SetInitialDataAsync()
         {
             await service.SetInitialData(new UserDTO

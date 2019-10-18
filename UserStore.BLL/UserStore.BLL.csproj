@@ -165,7 +165,7 @@
     <Compile Include="Helpers\UserHelpers.cs" />
     <Compile Include="Identity\CustomPasswordValidator.cs" />
     <Compile Include="Identity\CustomUserValidator.cs" />
-    <Compile Include="Identity\RussianIdentityErrorDescriber.cs" />
+    <Compile Include="Identity\EmailService.cs" />
     <Compile Include="Infrastructure\OperationDetails.cs" />
     <Compile Include="Infrastructure\ServiceModule.cs" />
     <Compile Include="Interfaces\IProductService.cs" />

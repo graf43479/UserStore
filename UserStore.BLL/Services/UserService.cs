@@ -30,7 +30,10 @@ namespace UserStore.BLL.Services
             Database = uow;            
             Database.UserManager.PasswordValidator = new CustomPasswordValidator();
             Database.UserManager.UserValidator = new CustomUserValidator();
-            
+            Database.UserManager.EmailService = new EmailService();
+            //Database.UserManager.SmsService
+
+
         }
 
         private AppUserManager UserManager
@@ -65,6 +68,13 @@ namespace UserStore.BLL.Services
                 
                 ClientProfile clientProfile = new ClientProfile { ClientProfileID = user.Id, Adress = userDto.Address, Name = userDto.Name };
                 Database.ClientManager.Create(clientProfile);
+
+                var code = await Database.UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
+                var callbackUrl = "MyUrl" + "/Account/ConfirmEmail?userId=" + user.Id + "&code=" + code;
+
+                await UserManager.SendEmailAsync(user.Id, "Подтверждение электронной почты",
+                       "Для завершения регистрации перейдите по ссылке:: <a href=\""
+                                                       + callbackUrl + "\">завершить регистрацию</a>");
                 await Database.SaveAsync();
                 return new OperationDetails(true, "Пользователь успешно создан", "");
             }
@@ -77,12 +87,27 @@ namespace UserStore.BLL.Services
         public async Task<ClaimsIdentity> Authenticate(UserDTO userDto)
         {
             ClaimsIdentity claim = null;
+            //claim.AddClaim(new Claim("isConfirmed", "false", null));
             AppUser user = await Database.UserManager.FindAsync(userDto.Email, userDto.Password);
+            //if (user.Claims.FirstOrDefault(x => x.ClaimType == "isConfirmed").ClaimValue != null)
+            //{
+
+            //}
             if (user != null)
-            {
+            {                
                 claim = await Database.UserManager.CreateIdentityAsync(user, DefaultAuthenticationTypes.ApplicationCookie);
+                //if (user.EmailConfirmed)
+                //{
+                //    claim.FindFirst("isConfirmedClaim");
+                //}
             }
             return claim;
+        }
+
+        public async Task<bool> IsEmailConfirmedAsync(UserDTO userDto)
+        {
+            AppUser user = await Database.UserManager.FindAsync(userDto.Email, userDto.Password);
+            return user.EmailConfirmed;
         }
 
         public IQueryable<UserDTO> GetUsers()
@@ -146,5 +171,7 @@ namespace UserStore.BLL.Services
         {
             Database.Dispose();
         }
+
+        
     }
 }

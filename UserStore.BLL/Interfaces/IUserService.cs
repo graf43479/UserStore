@@ -17,6 +17,6 @@ namespace UserStore.BLL.Interfaces
         Task SetInitialData(UserDTO adminDto, List<string> roles);
 
         IQueryable<UserDTO> GetUsers();
-
+        Task<bool> IsEmailConfirmedAsync(UserDTO userDto);
     }
 }
