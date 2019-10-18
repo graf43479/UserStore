@@ -1,0 +1,63 @@
+﻿@*@using IdentityCustom.Models*@
+@using UserStore.BLL.DTO
+@using UserStore.WEB.Models
+@*@model IEnumerable<RoleDTO>*@
+@model UsersPerRoleViewModel
+
+@{
+    ViewBag.Title = "Роли";
+}
+<div>
+    @ViewBag.Tests
+</div>
+<div class="panel panel-primary">
+    <div class="panel-heading">Roles</div>
+    <table class="table table-striped">
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Пользователи</th>
+            <th style="min-width: 150px"></th>
+        </tr>
+        @if (Model.UsersPerRole.Count() == 0)
+        {
+            <tr>
+                <td colspan="4" class="text-center">Нет ролей</td>
+            </tr>
+        }
+        else
+        {
+            foreach (UsersPerRoleDTO role in Model.UsersPerRole)
+            {
+                <tr>
+                    <td>@role.RoleId</td>
+                    <td>@role.RoleName</td>
+                    <td>
+                        @if (role.Users == null || role.Users.Count() == 0)
+                        {
+                            @: Нет пользователей в этой роли
+                        }
+                        else
+                        {
+                            <p>
+                                @*@string.Join(", ", role.Users.Select(x =>
+                                    Html.GetUserName(x.UserId)))*@
+                                Здесь должна быть инфа
+                                @role.Users.First().UserName
+                            </p>
+                        }
+                    </td>
+                    <td>
+                        @using (Html.BeginForm("Delete", "RoleAdmin", new { id = role.RoleId }))
+                        {
+                            @Html.ActionLink("Изменить", "Edit", new { id = role.RoleId },
+                                new { @class = "btn btn-primary btn-xs", style = "float:left; margin-right:5px" })
+                            <button class="btn btn-danger btn-xs" type="submit">Удалить</button>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </table>
+</div>
+@Html.ActionLink("Создать", "Create", null, new { @class = "btn btn-primary" })
