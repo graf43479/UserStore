@@ -33,4 +33,7 @@ namespace UserStore.WEB.Models
         [Required]
         public string Name { get; set; }
     }
+
+
+        
 }

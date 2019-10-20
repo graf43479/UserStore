@@ -18,6 +18,8 @@ using UserStore.DAL.Repositories;
 using System.Web.Mvc;
 using UserStore.DAL.Identity;
 using Microsoft.AspNet.Identity.Owin;
+using Microsoft.Owin.Security.DataProtection;
+using UserStore.BLL.Models;
 
 namespace UserStore.BLL.Services
 {
@@ -33,7 +35,9 @@ namespace UserStore.BLL.Services
             Database.UserManager.EmailService = new EmailService();
             //Database.UserManager.SmsService
 
-
+            var provider = new DpapiDataProtectionProvider("YourAppName");
+            Database.UserManager.UserTokenProvider = new DataProtectorTokenProvider<AppUser, string>(provider.Create("UserToken"))
+    as IUserTokenProvider<AppUser, string>;
         }
 
         private AppUserManager UserManager
@@ -45,7 +49,7 @@ namespace UserStore.BLL.Services
         }
 
 
-        public async Task<OperationDetails> Create(UserDTO userDto)
+        public async Task<OperationDetails> Create(UserDTO userDto, string callbackUrlBase)
         {
             //Database.UserManager.PasswordValidator
             AppUser user = await Database.UserManager.FindByEmailAsync(userDto.Email);            
@@ -53,7 +57,8 @@ namespace UserStore.BLL.Services
             {
                 user = new AppUser { Email = userDto.Email, UserName = userDto.Email }; 
                 var result = await Database.UserManager.CreateAsync(user, userDto.Password);
-               // var result = Database.UserManager.Create(user, userDto.Password);
+               
+                // var result = Database.UserManager.Create(user, userDto.Password);
 
                 if (result.Errors.Count() > 0)
                 {
@@ -68,13 +73,20 @@ namespace UserStore.BLL.Services
                 
                 ClientProfile clientProfile = new ClientProfile { ClientProfileID = user.Id, Adress = userDto.Address, Name = userDto.Name };
                 Database.ClientManager.Create(clientProfile);
+                
 
+        //        var provider = new DpapiDataProtectionProvider("YourAppName");
+        //        Database.UserManager.UserTokenProvider = new DataProtectorTokenProvider<AppUser, string>(provider.Create("UserToken"))
+        //as IUserTokenProvider<AppUser, string>;
                 var code = await Database.UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
-                var callbackUrl = "MyUrl" + "/Account/ConfirmEmail?userId=" + user.Id + "&code=" + code;
+                var callbackUrl = callbackUrlBase + "?userId=" + user.Id + "&code=" + HttpUtility.UrlEncode(code);
 
-                await UserManager.SendEmailAsync(user.Id, "Подтверждение электронной почты",
+                //TODO: решить проблему не закрытого асинхронного таска
+                Task t = Database.UserManager.SendEmailAsync(user.Id, "Подтверждение электронной почты",
                        "Для завершения регистрации перейдите по ссылке:: <a href=\""
                                                        + callbackUrl + "\">завершить регистрацию</a>");
+                t.Start();
+                t.Wait();
                 await Database.SaveAsync();
                 return new OperationDetails(true, "Пользователь успешно создан", "");
             }
@@ -104,10 +116,55 @@ namespace UserStore.BLL.Services
             return claim;
         }
 
-        public async Task<bool> IsEmailConfirmedAsync(UserDTO userDto)
+        public async Task<OperationDetails> IsEmailConfirmedAsync(UserDTO userDto)
         {
             AppUser user = await Database.UserManager.FindAsync(userDto.Email, userDto.Password);
-            return user.EmailConfirmed;
+            return new OperationDetails(user.EmailConfirmed, user.EmailConfirmed==true ? "Email подтержден" : "Email не подтвержден", "" );
+        }
+
+        public async Task<OperationDetails> ConfirmEmailAsync(string userId, string code)
+        {
+
+            var result = await Database.UserManager.ConfirmEmailAsync(userId, code);
+            return new OperationDetails(result.Succeeded, 
+                    result.Succeeded ? "Пользователь активирован" : "Ошибка активации", 
+                    "");
+            
+
+        }
+
+        public async Task<OperationDetails> ResetPasswordAsync(string email, string callbackUrlBase)
+        {
+
+            var user = await Database.UserManager.FindByEmailAsync(email);
+            if (user == null || !(await Database.UserManager.IsEmailConfirmedAsync(user.Id)))
+            {
+                return new OperationDetails(false, $"Пользователь с email {email} не найден", "");                
+            }
+            string code = await Database.UserManager.GeneratePasswordResetTokenAsync(user.Id);
+
+            var callbackUrl = callbackUrlBase + "?code=" + HttpUtility.UrlEncode(code);
+                  await Database.UserManager.SendEmailAsync(user.Id, "Сброс пароля",
+                "Для сброса пароля, перейдите по ссылке <a href=\"" + callbackUrl + "\">сбросить</a>");
+            return new OperationDetails(true, "Сброс пароля прошёл успешно, письмо отправлено", "");
+        }
+
+
+        public async Task<OperationDetails> DoResetPaswordAsync(ResetPasswordViewModel model)
+        {
+            var user = await Database.UserManager.FindByNameAsync(model.Email);
+            if (user == null)
+            {
+                return new OperationDetails(false, "Пользователь не найден", "");
+            }
+
+            var result = await Database.UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
+            if (result.Succeeded)
+            {
+                return new OperationDetails(true, "Пароль сброшен", "");
+            }
+            return new OperationDetails(false, "Ошибка при сбросе пароля", "");
+
         }
 
         public IQueryable<UserDTO> GetUsers()
@@ -165,7 +222,7 @@ namespace UserStore.BLL.Services
                     await Database.RoleManager.CreateAsync(role);
                 }
             }
-            await Create(adminDto);
+            await Create(adminDto, null);
         }
         public void Dispose()
         {

@@ -14,6 +14,7 @@ namespace UserStore.DAL.Identity
     {
         public AppUserManager(IUserStore<AppUser> store) : base(store)
         {            
+
         }
 
      /*   public static AppUserManager Create(IdentityFactoryOptions<AppUserManager> options, IOwinContext context)

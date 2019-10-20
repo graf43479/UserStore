@@ -13,6 +13,7 @@ using UserStore.BLL.Infrastructure;
 using UserStore.BLL.Interfaces;
 using UserStore.BLL.Services;
 using UserStore.WEB.Models;
+using UserStore.BLL.Models;
 
 namespace UserStore.WEB.Controllers
 {
@@ -72,8 +73,8 @@ namespace UserStore.WEB.Controllers
                 }
                 else
                 {
-                    bool isConfirmed = await service.IsEmailConfirmedAsync(userDto);
-                    if(isConfirmed)
+                    OperationDetails isConfirmed = await service.IsEmailConfirmedAsync(userDto);
+                    if(isConfirmed.Succedeed)
                     {
                         AuthenticationManager.SignOut();
                         AuthenticationManager.SignIn(new AuthenticationProperties
@@ -92,7 +93,7 @@ namespace UserStore.WEB.Controllers
                     }
                     else
                     {
-                       ModelState.AddModelError("", "Пользователь не активизирован");
+                       ModelState.AddModelError("", isConfirmed.Message);
                     }
                 }
             }
@@ -128,7 +129,8 @@ namespace UserStore.WEB.Controllers
                     //Role = "user"
                     Roles = new string[] { "user" }
                 };
-                OperationDetails operationDetails = await service.Create(userDto);                
+                string callbackUrlBase = Url.Action("ConfirmEmail", "Account", null, protocol: Request.Url.Scheme);
+                OperationDetails operationDetails = await service.Create(userDto, callbackUrlBase);                
                 if (operationDetails.Succedeed)
                     return View("SuccessRegister");
                 else
@@ -137,7 +139,7 @@ namespace UserStore.WEB.Controllers
             return View(model);
         }
 
-
+        //Подтердждение активации аккаунта/изменение забытого пароля
         [AllowAnonymous]
         public async Task<ActionResult> ConfirmEmail(string userId, string code)
         {
@@ -145,11 +147,97 @@ namespace UserStore.WEB.Controllers
             {
                 return View("Error");
             }
-            //var result = await service.ConfirmEmailAsync(userId, code);
-            OperationDetails result = new OperationDetails(true, "","");
-            return View(result.Succedeed ? "ConfirmEmail" : "Error");
+            OperationDetails result = await service.ConfirmEmailAsync(userId, code);
+            //TODO: сделать страницы обработки результата
+            //return View(result.Succedeed ? "ConfirmEmail" : "Error");
+            return View(result.Succedeed ? "SuccessRegister" : "Error");
         }
 
+
+        //страница указания email для восстановления пароля
+        [AllowAnonymous]
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+
+                string callbackUrlBase = Url.Action("ResetPassword", "Account", null, protocol: Request.Url.Scheme);
+                OperationDetails result = await service.ResetPasswordAsync(model.Email, callbackUrlBase);
+                if (result.Succedeed)
+                {
+                    return RedirectToAction("ForgotPasswordConfirmation", "Account");
+                }
+                else
+                {
+                    return View("ForgotPasswordConfirmation");
+                }
+
+            }
+            return View(model);
+        }
+
+
+        //Страница сообщения о том, что на почту выслана ссылка для восстановления пароля
+        [AllowAnonymous]
+        public ActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+
+        //Подтверждение установки нового пароля
+        [AllowAnonymous]
+        public ActionResult ResetPasswordConfirmation()
+        {
+            return View();
+        }
+
+
+        [AllowAnonymous]
+        public ActionResult ResetPassword(string code)
+        {
+            return code == null ? View("Error") : View();
+        }
+
+        //TODO: разгрести это
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            OperationDetails result = await service.DoResetPaswordAsync(model);
+
+            if (!result.Succedeed)
+            {
+                // Don't reveal that the user does not exist
+                return RedirectToAction("ResetPasswordConfirmation", "Account");
+            }
+
+
+            return RedirectToAction("ResetPasswordConfirmation", "Account");
+
+            
+            //TODO: метод AddErrors
+            //AddErrors(result);
+         
+        }
+
+        
+
+        
 
         private async Task SetInitialDataAsync()
         {
