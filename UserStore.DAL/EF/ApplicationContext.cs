@@ -6,6 +6,8 @@ using UserStore.DAL.Identity;
 using Microsoft.AspNet.Identity;
 using System.Data.Entity.ModelConfiguration.Conventions;
 using UserStore.DAL.Configurations;
+using Microsoft.Owin.Security.DataProtection;
+using Microsoft.AspNet.Identity.Owin;
 
 namespace UserStore.DAL.EF
 {
@@ -19,6 +21,7 @@ namespace UserStore.DAL.EF
         }
 
         public DbSet<ClientProfile> ClientProfiles { get; set; }
+        //public DbSet<ExceptionDetail> ExceptionDetails { get; set; }
         public DbSet<Product> Products { get; set; }
 
 
@@ -52,11 +55,14 @@ namespace UserStore.DAL.EF
             private void PerformInitialSetup(ApplicationContext context)
             {
                 // настройки конфигурации контекста будут указываться здесь
+                var provider = new DpapiDataProtectionProvider("SampleAppName");
+
                 //Рождение первого админа
                 AppUserManager userMng = new AppUserManager(new UserStore<AppUser>(context));
                 AppRoleManager roleMng = new AppRoleManager(new RoleStore<AppRole>(context));
+                userMng.UserTokenProvider = new DataProtectorTokenProvider<AppUser>(provider.Create("SampleTokenName"));
 
-                string roleName = "admin";
+            string roleName = "admin";
                 string userName = "graf43479";
                 string pass = "mypassword";
                 string email = "admin@ya.ru";

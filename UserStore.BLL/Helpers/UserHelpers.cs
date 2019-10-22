@@ -18,15 +18,7 @@ namespace UserStore.BLL.Helpers
             appUser.UserName = userDTO.UserName;
             appUser.ClientProfile.Name = userDTO.Name;
             appUser.ClientProfile.Adress = userDTO.Address;
-            //appUser.Roles = userDTO.Roles;
-
-            //     public string Id { get; set; }
-            //public string Email { get; set; }
-            //public string Password { get; set; }
-            //public string UserName { get; set; }
-            //public string Name { get; set; }
-            //public string Address { get; set; }
-            //public string Role { get; set; }
+      
             return appUser;
         }
 

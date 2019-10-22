@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 using UserStore.BLL.DTO;
 using UserStore.BLL.Infrastructure;
 using UserStore.BLL.Interfaces;
-using UserStore.DAL.Identity;
 using UserStore.DAL.Interfaces;
-using Microsoft.Owin;
 using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.Owin;
-using AutoMapper;
 using UserStore.DAL.Entities;
 using System.Data.Entity;
 using Microsoft.AspNet.Identity.EntityFramework;
@@ -28,38 +22,18 @@ namespace UserStore.BLL.Services
         {
             Database = uow;
         }
-
-
-        //private AppUserManager UserManager
-        //{
-        //    get
-        //    {
-        //        return HttpContext.Current.GetOwinContext().GetUserManager<AppUserManager>();
-        //    }
-        //}
-
-        //private AppRoleManager RoleManager
-        //{
-        //    get
-        //    {
-        //        return HttpContext.Current.GetOwinContext().GetUserManager<AppRoleManager>();
-        //    }
-        //}
-
-        public async Task<OperationDetails> Create(string roleName)
+        
+        public async Task<OperationDetails> CreateAsync(string roleName)
         {
             var result = await Database.RoleManager.CreateAsync(new AppRole(roleName));
-            // var result = Database.UserManager.Create(user, userDto.Password);
-            
             if (result.Errors.Count() > 0)
             {
                 return new OperationDetails(false, result.Errors.FirstOrDefault(), "");
             }
-
             return new OperationDetails(true, "Роль успешно создана", "");
         }
 
-        public async Task<OperationDetails> Delete(string roleId)
+        public async Task<OperationDetails> DeleteAsync(string roleId)
         {
             AppRole role = await Database.RoleManager.FindByIdAsync(roleId);
             string roleName = role.Name;
@@ -81,36 +55,13 @@ namespace UserStore.BLL.Services
             }
         }
 
-
-        public async Task<OperationDetails> Update(RoleDTO roleDto)
+        //TODO: переименование имени роли
+        public async Task<OperationDetails> UpdateAsync(RoleDTO roleDto)
         {
-            //IdentityResult result;
-
-            //foreach (string userId in model.IdsToAdd ?? new string[] { })
-            //{
-            //    result = await UserManager.AddToRoleAsync(userId, model.RoleName);
-
-            //    if (!result.Succeeded)
-            //    {
-            //        return View("Error", result.Errors);
-            //    }
-            //}
-            //foreach (string userId in model.IdsToDelete ?? new string[] { })
-            //{
-            //    result = await UserManager.RemoveFromRoleAsync(userId,
-            //    model.RoleName);
-
-            //    if (!result.Succeeded)
-            //    {
-            //        return View("Error", result.Errors);
-            //    }
-            //}
-            //return RedirectToAction("Index");
-
             throw new Exception();
         }
 
-        public async Task<RoleEditModel> GetRoleEditModel(string roleId)
+        public async Task<RoleEditModel> GetRoleEditModelAsync(string roleId)
         {
             AppRole role = await Database.RoleManager.FindByIdAsync(roleId);
             string[] memberIDs = role.Users.Select(x => x.UserId).ToArray();
@@ -158,7 +109,6 @@ namespace UserStore.BLL.Services
         private IEnumerable<UserInfoDTO> GetUsersPerRoleDTO(string roleId)
         {
             List<UserInfoDTO> usersInfo = new List<UserInfoDTO>();
-            //var p = Database.RoleManager.Roles.Where(x => x.Id== roleId).FirstOrDefault();
             var p = Database.RoleManager.Roles.AsNoTracking().Where(x => x.Id == roleId).FirstOrDefault();
             if (p != null)
             {
@@ -168,13 +118,8 @@ namespace UserStore.BLL.Services
                     usersInfo.Add(GetUserDTO(iu.UserId));
                 }
             }
-            
-            //    IEnumerable<IdentityUserRole> users = p.Users;
-            //    return users;
             return usersInfo;
         }
-
-
 
         public IEnumerable<UsersPerRoleDTO> GetUsersPerRole(string roleId, string userId)
         {
@@ -188,75 +133,13 @@ namespace UserStore.BLL.Services
                 UsersPerRoleDTO model = new UsersPerRoleDTO()
                 {
                     RoleId = role.Id,
-                    RoleName = role.Name,
-                    //Users = GetUsersPerRoleDTO(role.Id)
+                    RoleName = role.Name,                    
                     Users = GetUsersForRole(role.Id, userId, appRoles)
                 };
                 result.Add(model);
-            }
-            
+            }            
             return result;
         }
-
-
-        //public IEnumerable<IdentityUserRole> GetCustomIdentityUser(string role)
-        //{            
-        //    var p = Database.RoleManager.Roles.Where(x=>x.Name==role).FirstOrDefault();
-        //    IEnumerable<IdentityUserRole> users = p.Users;
-        //    return users;
-        //}
-
-     
-
-      /*  public List<RoleDTO> GetUsersInRole(string roleName)
-        {
-           
-            List<AppUser> users = new List<AppUser>();
-            string[] r = Database.RoleManager.Roles.Select(x => x.Name).Distinct().AsNoTracking().ToArray();
-            List<RoleDTO> result = new List<RoleDTO>();
-            foreach (string item in r)
-            {
-                RoleDTO ul = new RoleDTO()
-                {
-                    Id = null,
-                    Name = item,
-                };
-                var users2 = GetApplicationUsersInRole(item);
-
-
-                Mapper.Initialize(cfg => cfg.CreateMap<AppUser, UserDTO>());
-
-                IEnumerable<UserDTO> userPerRole = Mapper.Map<IEnumerable<AppUser>, IEnumerable<UserDTO>>(users2);
-
-                foreach (var user in userPerRole)
-                {
-                    ul.Users.Add(user);
-                }
-
-                result.Add(ul);
-              
-            }
-
-           
-
-            return result; // users.AsQueryable();
-            //}
-            //return from user in Database.RoleManager.Roles
-            //       where user.Roles.Any(r => r.Role.Name == roleName)
-            //       select user;
-
-
-        }*/       
-       
-
-
-      
-
-        void Some()
-        {
-            AppRoleManager manager = HttpContext.Current.GetOwinContext().GetUserManager<AppRoleManager>();
-        }
-
 
         private IEnumerable<UserInfoDTO> GetUsersForRole(string roleId, string userId, IEnumerable<AppRole> appRoles)
         {
@@ -276,16 +159,11 @@ namespace UserStore.BLL.Services
                                                  Name = u.UserName,
                                                  UserName = u.UserName
                                              };
-
             return users;
-
-
-
         }
 
         public async Task<OperationDetails> AddToRoleAsync(string roleName, string[] idsToAdd)
-        {
-            
+        {            
             foreach (string userId in idsToAdd ?? new string[] { })
             {
                 IdentityResult result = await Database.UserManager.AddToRoleAsync(userId, roleName);
@@ -294,23 +172,9 @@ namespace UserStore.BLL.Services
                     return new OperationDetails(false, result.Errors.FirstOrDefault(), "");
                 }                
             }            
-            
-             return new OperationDetails(true, $"Пользователи добавлены в роль {roleName}", "");
-            
-            /*
-                foreach (string userId in model.IdsToDelete ?? new string[] { })
-                {
-                    result = await UserManager.RemoveFromRoleAsync(userId,
-                    model.RoleName);
-
-                    if (!result.Succeeded)
-                    {
-                        return View("Error", result.Errors);
-                    }
-                }
-                return RedirectToAction("Index");
-                */
+            return new OperationDetails(true, $"Пользователи добавлены в роль {roleName}", "");            
         }
+
         public async Task<OperationDetails> RemoveFromRoleAsync(string roleName, string[] idsToDelete)
         {
             foreach (string userId in idsToDelete ?? new string[] { })
@@ -321,7 +185,6 @@ namespace UserStore.BLL.Services
                     return new OperationDetails(false, result.Errors.FirstOrDefault(), "");
                 }
             }
-
             return new OperationDetails(true, $"Пользователи удалены из роли {roleName}", "");
         }
 

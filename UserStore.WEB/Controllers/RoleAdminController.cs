@@ -1,14 +1,7 @@
 ﻿using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.EntityFramework;
-using Microsoft.AspNet.Identity.Owin;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Mvc;
-using UserStore.BLL.DTO;
 using UserStore.BLL.Infrastructure;
 using UserStore.BLL.Interfaces;
 using UserStore.BLL.Models;
@@ -24,17 +17,14 @@ namespace UserStore.WEB.Controllers
         {
             service = roleService;
         }
-
-
+        
         public ActionResult Index(string roleId, string userId)
         {
-
             UsersPerRoleViewModel model = new UsersPerRoleViewModel();
             model.UsersPerRole = service.GetUsersPerRole(roleId, userId);          
             return View(model);
         }
-
-       
+               
         public ActionResult Create()
         {
             return View();
@@ -45,19 +35,14 @@ namespace UserStore.WEB.Controllers
         {
             if (ModelState.IsValid)
             {
-                //IdentityResult result
-                //    = await service.Create(name);
-
-                OperationDetails result = await service.Create(name);
-                
+                OperationDetails result = await service.CreateAsync(name);                
                 if (result.Succedeed)
                 {
                     return RedirectToAction("Index");
                 }
                 else
-                {
-                    ModelState.AddModelError("", result.Message);
-                    //AddErrorsFromResult(result.Message);
+                {                    
+                    AddErrorsFromResult(result);
                 }
             }
             return View();
@@ -65,9 +50,8 @@ namespace UserStore.WEB.Controllers
 
         [HttpPost]
         public async Task<ActionResult> Delete(string id)
-        {
-            //TODO: заменить имена всех таксов на ASYNC
-            OperationDetails result = await service.Delete(id);
+        {            
+            OperationDetails result = await service.DeleteAsync(id);
 
             if (result.Succedeed)
             {
@@ -75,14 +59,13 @@ namespace UserStore.WEB.Controllers
             }
             else
             {
-                return View("Error", result.Message);
+                return View("Error", result.Messages);
             }
         }
-
-        
+                
         public async Task<ActionResult> Edit(string id)
         {
-            RoleEditModel model = await service.GetRoleEditModel(id);
+            RoleEditModel model = await service.GetRoleEditModelAsync(id);
 
             return View(model);
         }
@@ -95,8 +78,7 @@ namespace UserStore.WEB.Controllers
                 OperationDetails result = await service.AddToRoleAsync(model.RoleName, model.IdsToAdd);
                 if (!result.Succedeed)
                 {
-                    //TODO:: сделать накопление ошибок в лист
-                    return View("Error", new string[] { result.Message });
+                    return View("Error",  result.Messages);
                 }
 
                 result = await service.RemoveFromRoleAsync(model.RoleName, model.IdsToDelete);
@@ -107,25 +89,20 @@ namespace UserStore.WEB.Controllers
                 }
                 else
                 {
-                    return View("Error", new string[] { result.Message });
+                    return View("Error", result.Messages);
                 }                             
             }
             return View("Error", new string[] { "Роль не найдена" });
         }
         
-
-        private void AddErrorsFromResult(IdentityResult result)
+        private void AddErrorsFromResult(OperationDetails result)
         {
-            foreach (string error in result.Errors)
+            foreach (string error in result.Messages)
             {
                 ModelState.AddModelError("", error);
             }
         }
 
 
-        private void Roles()
-        {
-            //HttpContext.GetOwinContext().GetUserManager<AppRoleManager> Authentication;
-        }
     }
 }

@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNet.Identity.EntityFramework;
 using System;
-using System.Collections.Generic;
-using System.Data.Entity;
-using System.Text;
 using System.Threading.Tasks;
 using UserStore.DAL.EF;
 using UserStore.DAL.Entities;
 using UserStore.DAL.Identity;
 using UserStore.DAL.Interfaces;
-using System.Net.Http;
 
 namespace UserStore.DAL.Repositories
 {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UserStore.DAL.Entities;
+﻿using UserStore.DAL.Entities;
 using UserStore.DAL.Interfaces;
 using UserStore.DAL.EF;
 

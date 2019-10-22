@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UserStore.DAL.EF;
 using UserStore.DAL.Entities;
 using UserStore.DAL.Interfaces;
@@ -42,11 +40,7 @@ namespace UserStore.DAL.Repositories
         {
             return db.Products.Where(predicate).ToList();
         }
-
-
-       
-
-    
+            
         public IEnumerable<Product> GetAll()
         {
             return db.Products;

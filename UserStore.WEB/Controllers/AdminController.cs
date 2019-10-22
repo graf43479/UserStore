@@ -19,17 +19,8 @@ namespace UserStore.WEB.Controllers
         public AdminController(IUserService userService)
         {
             service = userService;
-        }
+        }      
 
-        //private IUserService UserService
-        //{
-        //    get
-        //    {
-        //        return HttpContext.GetOwinContext().GetUserManager<IUserService>();
-        //    }
-        //}
-
-        // GET: Admin
         public ActionResult Index()
         {
             var p = service.GetUsers().ToList();

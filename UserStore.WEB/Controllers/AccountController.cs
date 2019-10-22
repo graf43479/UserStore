@@ -13,29 +13,24 @@ using UserStore.BLL.Infrastructure;
 using UserStore.BLL.Interfaces;
 using UserStore.BLL.Services;
 using UserStore.WEB.Models;
+using UserStore.BLL.Models;
+using System.IO;
+using System.Drawing;
+using System.Drawing.Text;
+using System.Drawing.Drawing2D;
 
 namespace UserStore.WEB.Controllers
 {
     [Authorize]
     public class AccountController : Controller
     {
-        // private IServiceCreator service;
         private IUserService service;
 
         public AccountController(IUserService userService)
         {
             service = userService;
         }   
-
-        //private IUserService UserService
-        //{
-        //    get
-        //    {
-        //        return HttpContext.GetOwinContext().GetUserManager<IUserService>();
-        //    }
-        //}
-       
-
+             
         private IAuthenticationManager AuthenticationManager
         {
             get
@@ -45,12 +40,11 @@ namespace UserStore.WEB.Controllers
         }
 
         [AllowAnonymous]
-       // public ActionResult Login()
         public ActionResult Login(string returnUrl)
         {            
             if (HttpContext.User.Identity.IsAuthenticated)
             {
-                return View("Error", new string[] { "В доступе отказано" });
+                return RedirectToAction("Index", "Home"); //  View("Error", new string[] { "В доступе отказано" });
             }
             ViewBag.returnUrl = returnUrl;
             return View();
@@ -61,32 +55,53 @@ namespace UserStore.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Login(LoginModel model, string returnUrl)
         {
-            await SetInitialDataAsync();
+            //Два способа подсчета неудачных попыток входа
+            //1. Через встроенные средства Identity. Минус: работает только для зарегистрированного логина
+            //2. Через сессию. Минус: сессия может сбрасываться роботом. 
+            //Тем не менее совместим оба подхода. Можно будет ещё куки добавить       
+            
+            Session["attempt"] = (Session["attempt"]==null) ? 0 : (int)Session["attempt"] + 1;                        
+            if ((Session["Captcha"] == null || Session["Captcha"].ToString() != model.Captcha) && (int)Session["attempt"] > 3)
+            {
+                ModelState.AddModelError("Captcha", "Сумма введена неверно! Пожалуйста, повторите ещё раз!");
+                return View(model);
+            }
+                
             if (ModelState.IsValid)
             {
                 UserDTO userDto = new UserDTO { Email = model.Email, Password = model.Password };
-                ClaimsIdentity claim = await service.Authenticate(userDto);
+                ClaimsIdentity claim = await service.AuthenticateAsync(userDto);
                 if (claim == null)
-                {
+                {                    
+                    Session["attempt"] = await service.CheckForAttemptsAsync(model.Email);                    
                     ModelState.AddModelError("", "Неверный логин или пароль.");
+                    
                 }
                 else
                 {
-                    AuthenticationManager.SignOut();
-                    AuthenticationManager.SignIn(new AuthenticationProperties
+                    OperationDetails isConfirmed = await service.IsEmailConfirmedAsync(userDto);
+                    if(isConfirmed.Succedeed)
                     {
-                        IsPersistent = true
-                    }, claim);
+                        AuthenticationManager.SignOut();
+                        AuthenticationManager.SignIn(new AuthenticationProperties
+                        {
+                            IsPersistent = true
+                        }, claim);
 
-                    if (String.IsNullOrEmpty(returnUrl))
-                    {
-                        RedirectToAction("Index", "Home");
+                        Session["attempt"] = 0;
+                        if (String.IsNullOrEmpty(returnUrl) || returnUrl.Contains(Url.Action("Login","Account")))
+                        {
+                           return RedirectToAction("Index", "Home", null);
+                        }
+                        else
+                        {
+                            Redirect(returnUrl);
+                        }
                     }
                     else
                     {
-                        Redirect(returnUrl);
-                    }                    
-                    
+                        AddErrorsFromResult(isConfirmed);                       
+                    }
                 }
             }
             return View(model);
@@ -121,14 +136,167 @@ namespace UserStore.WEB.Controllers
                     //Role = "user"
                     Roles = new string[] { "user" }
                 };
-                OperationDetails operationDetails = await service.Create(userDto);                
+                string callbackUrlBase = Url.Action("ConfirmEmail", "Account", null, protocol: Request.Url.Scheme);
+                OperationDetails operationDetails = await service.CreateAsync(userDto, callbackUrlBase);
                 if (operationDetails.Succedeed)
                     return View("SuccessRegister");
                 else
-                    ModelState.AddModelError(operationDetails.Property, operationDetails.Message);
+                    AddErrorsFromResult(operationDetails);                    
             }
             return View(model);
         }
+
+        //Подтердждение активации аккаунта/изменение забытого пароля
+        [AllowAnonymous]
+        public async Task<ActionResult> ConfirmEmailAsync(string userId, string code)
+        {
+            if (userId == null || code == null)
+            {
+                return View("Error", new string[] { "Строка подтверждения некорректна!"});
+            }
+            OperationDetails result = await service.ConfirmEmailAsync(userId, code);
+            //TODO: сделать страницы обработки результата
+            //return View(result.Succedeed ? "ConfirmEmail" : "Error");
+            return View(result.Succedeed ? "SuccessRegister" : "Error");
+        }
+
+        //страница указания email для восстановления пароля
+        [AllowAnonymous]
+        public ActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                string callbackUrlBase = Url.Action("ResetPassword", "Account", null, protocol: Request.Url.Scheme);
+                OperationDetails result = await service.ResetPasswordAsync(model.Email, callbackUrlBase);
+                if (result.Succedeed)
+                {
+                    return RedirectToAction("ForgotPasswordConfirmation", "Account");
+                }
+                else
+                {
+                    return View("ForgotPasswordConfirmation");
+                }
+            }
+            return View(model);
+        }
+
+
+        //Страница сообщения о том, что на почту выслана ссылка для восстановления пароля
+        [AllowAnonymous]
+        public ActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+
+        //Подтверждение установки нового пароля
+        [AllowAnonymous]
+        public ActionResult ResetPasswordConfirmation()
+        {
+            return View();
+        }
+        
+        [AllowAnonymous]
+        public ActionResult ResetPassword(string code)
+        {
+            return code == null ? View("Error") : View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            OperationDetails result = await service.DoResetPaswordAsync(model);
+
+            if (!result.Succedeed)
+            {
+                // Don't reveal that the user does not exist
+                return RedirectToAction("ResetPasswordConfirmation", "Account");
+            }
+            
+            return RedirectToAction("ResetPasswordConfirmation", "Account");
+                        
+            //TODO: метод AddErrors
+            //AddErrors(result);         
+        }
+
+        [AllowAnonymous]
+        public ActionResult CaptchaImage(string prefix, bool noisy = true)
+        {
+            var rand = new Random((int)DateTime.Now.Ticks);
+
+            //generate new question
+            int a = rand.Next(10, 99);
+            int b = rand.Next(0, 9);
+            var captcha = string.Format("{0} + {1} = ?", a, b);
+
+            //store answer
+            Session["Captcha" + prefix] = a + b;
+
+            //image stream
+            FileContentResult img = null;
+
+            using (var mem = new MemoryStream())
+            using (var bmp = new Bitmap(130, 30))
+            using (var gfx = Graphics.FromImage((Image)bmp))
+            {
+                gfx.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                gfx.SmoothingMode = SmoothingMode.AntiAlias;
+                gfx.FillRectangle(Brushes.White, new Rectangle(0, 0, bmp.Width, bmp.Height));
+
+                //add noise
+                if (noisy)
+                {
+                    int i, r, x, y;
+                    var pen = new Pen(Color.Yellow);
+                    for (i = 1; i < 10; i++)
+                    {
+                        pen.Color = Color.FromArgb(
+                            (rand.Next(0, 255)),
+                            (rand.Next(0, 255)),
+                            (rand.Next(0, 255)));
+
+                        r = rand.Next(0, (130 / 3));
+                        x = rand.Next(0, 130);
+                        y = rand.Next(0, 30);
+
+                        gfx.DrawEllipse(pen, x - r, y - r, r, r);
+                    }
+                }
+
+                //add question
+                gfx.DrawString(captcha, new Font("Tahoma", 15), Brushes.Gray, 2, 3);
+
+                //render as Jpeg
+                bmp.Save(mem, System.Drawing.Imaging.ImageFormat.Jpeg);
+                img = this.File(mem.GetBuffer(), "image/Jpeg");
+            }
+
+            return img;
+        }
+
+        private void AddErrorsFromResult(OperationDetails result)
+        {
+            foreach (string error in result.Messages)
+            {
+                ModelState.AddModelError("", error);
+            }
+        }
+
         private async Task SetInitialDataAsync()
         {
             await service.SetInitialData(new UserDTO
