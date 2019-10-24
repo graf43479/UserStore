@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+using UserStore.BLL.DTO;
+using UserStore.BLL.Infrastructure;
 using UserStore.BLL.Interfaces;
 
 namespace UserStore.WEB.Controllers
@@ -14,17 +16,66 @@ namespace UserStore.WEB.Controllers
     public class AdminController : Controller
     {
 
-        private IUserService service;
+        private IAdminService service;
 
-        public AdminController(IUserService userService)
+        public AdminController(IAdminService adminService)
         {
-            service = userService;
+            service = adminService;
         }      
 
-        public ActionResult Index()
+        public async Task<ActionResult> Index()
         {
-            var p = service.GetUsers().ToList();
-            return View(p);
+            var p = await service.GetUsersAsync();
+            return View(p.ToList());
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult> Delete(string id)
+        {
+            OperationDetails result = await service.DeleteUserAsync(id);
+            if (result.Succedeed)
+            {
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                return View("Error", result.Messages);
+            }
+        }
+
+        //public async Task<ActionResult> Edit(string id)
+        //{
+        //    AppUser user = await UserManager.FindByIdAsync(id);
+        //    if (user != null)
+        //    {
+        //        return View(user);
+        //    }
+        //    else
+        //    {
+        //        return RedirectToAction("Index");
+        //    }
+        //}
+
+
+        public async Task<ActionResult> ExceptionLogger()
+        {
+            IEnumerable<ExceptionDetailDTO> exceptions = await service.GetLogAsync();         
+            return View(exceptions);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> DeleteLogger(int? id)
+        {
+            if (id == null)
+            {
+                OperationDetails result = await service.DeleteExceptionDetailAsync();
+            }
+            else
+            {
+                OperationDetails result = await service.DeleteExceptionDetailByIDAsync((int)id);
+            }
+             return RedirectToAction("ExceptionLogger");
         }
     }
 }

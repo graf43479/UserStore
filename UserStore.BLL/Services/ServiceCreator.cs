@@ -10,6 +10,11 @@ namespace UserStore.BLL.Services
 {
     public class ServiceCreator : IServiceCreator
     {
+        public IExceptionService CreateExceptionService(string connection)
+        {
+            return new ExceptionService(new IdentityUnitOfWork(connection));
+        }
+
         public IProductService CreateProductService(string connection)
         {
             return new ProductService(new IdentityUnitOfWork(connection));
@@ -23,6 +28,10 @@ namespace UserStore.BLL.Services
         public IUserService CreateUserService(string connection)
         {
             return new UserService(new IdentityUnitOfWork(connection));
+        }
+        public IAdminService CreateAdminService(string connection)
+        {
+            return new AdminService(new IdentityUnitOfWork(connection));
         }
     }
 }

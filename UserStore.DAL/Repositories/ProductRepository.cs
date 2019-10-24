@@ -6,6 +6,7 @@ using UserStore.DAL.EF;
 using UserStore.DAL.Entities;
 using UserStore.DAL.Interfaces;
 
+
 namespace UserStore.DAL.Repositories
 {
     public class ProductRepository : IRepository<Product>
@@ -16,7 +17,7 @@ namespace UserStore.DAL.Repositories
             db = context;
         }
         public void Create(Product product)
-        {
+        {            
             db.Products.Add(product);
         }
 
@@ -26,9 +27,9 @@ namespace UserStore.DAL.Repositories
         }
         public void Delete(int id)
         {
-            Product book = db.Products.Find(id);
-            if (book != null)
-                db.Products.Remove(book);
+            Product product = db.Products.Find(id);
+            if (product != null)
+                db.Products.Remove(product);
         }
 
         public void Delete(Product product)

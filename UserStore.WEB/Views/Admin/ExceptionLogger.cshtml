@@ -1,0 +1,54 @@
+﻿@using UserStore.BLL.DTO
+@model List<ExceptionDetailDTO>
+
+@{
+    ViewBag.Title = "ASP.NET Identity";
+}
+
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        Список исключений
+    </div>
+    <table class="table table-striped">
+        <tr>
+            <th>Дата</th>
+            <th>Controller/Action</th>
+            <th>Сообщение</th>
+            @*<th>Стек исключения</th>*@
+            <th></th>
+
+        </tr>
+        @if (Model.Count() == 0)
+        {
+            <tr>
+                <td colspan="4" class="text-center">Исключений не обнаружено</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var exception in Model)
+            {
+                <tr>
+                    <td>@exception.Date</td>
+                    <td>@exception.ControllerName/@exception.ActionName</td>
+                    <td><span data-toggle="tooltip" data-placement="top" title="@exception.StackTrace">@exception.ExceptionMessage</span></td>
+                    @*<td>@exception.StackTrace</td>*@
+                    <td>
+                        @using (Html.BeginForm("DeleteLogger", "Admin", new { id = exception.Id }))
+                        {
+                            @*@Html.ActionLink("Изменить", "Edit", new { id = exception.Id },
+                                new { @class = "btn btn-primary btn-xs", style = "float: left; margin-right: 10px" })*@
+                            <button class="btn btn-danger btn-xs" type="submit">Удалить</button>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </table>
+</div>
+
+@using (Html.BeginForm("DeleteLogger", "Admin"))
+{    
+    <button class="btn btn-danger btn-xs" type="submit">Удалить всё</button>
+}
+@*@Html.ActionLink("Удалить все", "Create", null, new { @class = "btn btn-primary" })*@

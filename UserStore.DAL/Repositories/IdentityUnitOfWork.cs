@@ -16,7 +16,9 @@ namespace UserStore.DAL.Repositories
         private AppRoleManager roleManager;
         private ClientManager clientManager;
 
+
         private ProductRepository productRepository;
+        private ExceptionRepository exceptionRepository;
 
         public IdentityUnitOfWork(string connectionString)
         {
@@ -24,6 +26,8 @@ namespace UserStore.DAL.Repositories
             userManager = new AppUserManager(new UserStore<AppUser>(db));          
             roleManager = new AppRoleManager(new RoleStore<AppRole>(db));
             clientManager = new ClientManager(db);
+            productRepository = new ProductRepository(db);
+            exceptionRepository = new ExceptionRepository(db);
         }
 
         public AppUserManager UserManager => userManager;
@@ -39,6 +43,16 @@ namespace UserStore.DAL.Repositories
                 if (productRepository == null)
                     productRepository = new ProductRepository(db);
                 return productRepository;
+            }
+        }
+
+        public IRepository<ExceptionDetail> ExceptionDetails
+        {
+            get
+            {
+                if (exceptionRepository == null)
+                    exceptionRepository = new ExceptionRepository(db);
+                return exceptionRepository;
             }
         }
 

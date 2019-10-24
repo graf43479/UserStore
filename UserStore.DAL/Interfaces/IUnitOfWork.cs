@@ -11,6 +11,7 @@ namespace UserStore.DAL.Interfaces
         IClientManager ClientManager { get; }
         AppRoleManager RoleManager { get; }
         IRepository<Product> Products { get; }
+        IRepository<ExceptionDetail> ExceptionDetails { get; }
         Task SaveAsync();
     }
 }

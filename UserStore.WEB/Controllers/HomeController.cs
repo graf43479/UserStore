@@ -20,7 +20,7 @@ namespace UserStore.WEB.Controllers
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";
-
+            throw new Exception("Some shit was going on!");
             return View();
         }
 

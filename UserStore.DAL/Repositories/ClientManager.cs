@@ -6,7 +6,7 @@ namespace UserStore.DAL.Repositories
 {
     public class ClientManager : IClientManager
     {
-
+        //TODO: загнать под паттерн Repository интерфейс IClientManager
         public ApplicationContext Database { get; set; } 
 
         public ClientManager(ApplicationContext context)

@@ -18,13 +18,14 @@ using System.IO;
 using System.Drawing;
 using System.Drawing.Text;
 using System.Drawing.Drawing2D;
+using UserStore.WEB.Filters;
 
 namespace UserStore.WEB.Controllers
 {
     [Authorize]
     public class AccountController : Controller
     {
-        private IUserService service;
+        private IUserService service;        
 
         public AccountController(IUserService userService)
         {
@@ -38,7 +39,7 @@ namespace UserStore.WEB.Controllers
                 return HttpContext.GetOwinContext().Authentication;
             }
         }
-
+                
         [AllowAnonymous]
         public ActionResult Login(string returnUrl)
         {            
@@ -148,7 +149,7 @@ namespace UserStore.WEB.Controllers
 
         //Подтердждение активации аккаунта/изменение забытого пароля
         [AllowAnonymous]
-        public async Task<ActionResult> ConfirmEmailAsync(string userId, string code)
+        public async Task<ActionResult> ConfirmEmail(string userId, string code)
         {
             if (userId == null || code == null)
             {
@@ -233,6 +234,97 @@ namespace UserStore.WEB.Controllers
             //TODO: метод AddErrors
             //AddErrors(result);         
         }
+
+        //TODO: смена профильных данных
+        public ActionResult EditAccount()
+        {
+          //  string userName = HttpContext.User.Identity.Name;
+          //взять имя из контекста, вернуть в модель,
+          //приянть обновленную модель и переслать на update
+            RegisterModel model = new RegisterModel();
+            
+            return View(model);
+        }
+
+        //public async Task<ActionResult> Edit(string id)
+        //{
+        //    AppUser user = await UserManager.FindByIdAsync(id);
+        //    if (user != null)
+        //    {
+        //        return View(user);
+        //    }
+        //    else
+        //    {
+        //        return RedirectToAction("Index");
+        //    }
+        //}
+        /*
+         *    public async Task<ActionResult> Edit(string id)
+        {
+            AppUser user = await UserManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                return View(user);
+            }
+            else
+            {
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> Edit(string id, string email, string password)
+        {
+            AppUser user = await UserManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                user.Email = email;
+                IdentityResult validEmail
+                    = await UserManager.UserValidator.ValidateAsync(user);
+
+                if (!validEmail.Succeeded)
+                {
+                    AddErrorsFromResult(validEmail);
+                }
+
+                IdentityResult validPass = null;
+                if (password != string.Empty)
+                {
+                    validPass
+                        = await UserManager.PasswordValidator.ValidateAsync(password);
+
+                    if (validPass.Succeeded)
+                    {
+                        user.PasswordHash =
+                            UserManager.PasswordHasher.HashPassword(password);
+                    }
+                    else
+                    {
+                        AddErrorsFromResult(validPass);
+                    }
+                }
+
+                if ((validEmail.Succeeded && validPass == null) ||
+                        (validEmail.Succeeded && password != string.Empty && validPass.Succeeded))
+                {
+                    IdentityResult result = await UserManager.UpdateAsync(user);
+                    if (result.Succeeded)
+                    {
+                        return RedirectToAction("Index");
+                    }
+                    else
+                    {
+                        AddErrorsFromResult(result);
+                    }
+                }
+            }
+            else
+            {
+                ModelState.AddModelError("", "Пользователь не найден");
+            }
+            return View(user);
+        }
+         */
 
         [AllowAnonymous]
         public ActionResult CaptchaImage(string prefix, bool noisy = true)

@@ -21,5 +21,7 @@ namespace UserStore.BLL.Interfaces
         Task<OperationDetails> ResetPasswordAsync(string email, string callbackUrlBase);
         Task<OperationDetails> DoResetPaswordAsync(ResetPasswordViewModel model);
         Task<int> CheckForAttemptsAsync(string email);
+
+        Task<OperationDetails> CreateExceptionAsync(ExceptionDetailDTO exceptionDetail);
     }
 }

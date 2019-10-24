@@ -17,6 +17,7 @@ using Microsoft.Owin.Security.DataProtection;
 using UserStore.BLL.Models;
 using System.Threading;
 using System;
+using AutoMapper;
 
 namespace UserStore.BLL.Services
 {
@@ -47,7 +48,7 @@ namespace UserStore.BLL.Services
                
                 if (result.Errors.Count() > 0)
                 {
-                    return new OperationDetails(false, result.Errors.FirstOrDefault(), "");
+                    return new OperationDetails(false, result.Errors.ToArray(), "");
                 }
 
                 foreach (string role in userDto.Roles)
@@ -158,6 +159,14 @@ namespace UserStore.BLL.Services
         {
             var list = Database.UserManager.Users.AsNoTracking().ToList().UserDTOList();            
             return list.AsQueryable<UserDTO>();          
+        }
+
+        public async Task<OperationDetails> CreateExceptionAsync(ExceptionDetailDTO exceptionDetail)
+        {
+            Mapper.Initialize(cfg => cfg.CreateMap<ExceptionDetailDTO, ExceptionDetail>());
+            Database.ExceptionDetails.Create(Mapper.Map<ExceptionDetailDTO, ExceptionDetail>(exceptionDetail));
+            await Database.SaveAsync();
+            return new OperationDetails(true, "Исключение добавлено", "");
         }
 
         //начальная инициализация БД

@@ -78,6 +78,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configurations\ExceptionDetailConfig.cs" />
     <Compile Include="Configurations\ProductConfig.cs" />
     <Compile Include="EF\ApplicationContext.cs" />
     <Compile Include="Entities\AppRole.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="Interfaces\IUnitOfWork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\ClientManager.cs" />
+    <Compile Include="Repositories\ExceptionRepository.cs" />
     <Compile Include="Repositories\IdentityUnitOfWork.cs" />
     <Compile Include="Repositories\ProductRepository.cs" />
   </ItemGroup>

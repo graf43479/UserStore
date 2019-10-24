@@ -21,21 +21,24 @@ namespace UserStore.DAL.EF
         }
 
         public DbSet<ClientProfile> ClientProfiles { get; set; }
-        //public DbSet<ExceptionDetail> ExceptionDetails { get; set; }
+        public DbSet<ExceptionDetail> ExceptionDetails { get; set; }
         public DbSet<Product> Products { get; set; }
 
 
-        //protected override void OnModelCreating(DbModelBuilder modelBuilder)
-        //{
-        //    //конфиги
-        //    modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();          
+      /*  protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            //конфиги
+            //modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
 
-        //    modelBuilder.Entity<IdentityUserLogin>().HasKey<string>(l => l.UserId);
-        //    modelBuilder.Entity<IdentityRole>().HasKey<string>(r => r.Id);
-        //    modelBuilder.Entity<IdentityUserRole>().HasKey(r => new { r.RoleId, r.UserId });
+            //modelBuilder.Entity<IdentityUserLogin>().HasKey<string>(l => l.UserId);
+            //modelBuilder.Entity<IdentityRole>().HasKey<string>(r => r.Id);
+            //modelBuilder.Entity<IdentityUserRole>().HasKey(r => new { r.RoleId, r.UserId });
 
-        //    modelBuilder.Configurations.Add(new ProductConfig());
-        //}
+            modelBuilder.Configurations.Add(new ProductConfig());
+            modelBuilder.Configurations.Add(new ExceptionDetailConfig());
+
+        }
+        */
 
         internal void Dispose(bool v)
         {
@@ -45,7 +48,7 @@ namespace UserStore.DAL.EF
 
     //public class IdentityDbInit : NullDatabaseInitializer<ApplicationContext>{ } //DropCreateDatabaseAlways<AppIdentityDbContext
     public class IdentityDbInit : DropCreateDatabaseIfModelChanges<ApplicationContext> //DropCreateDatabaseAlways<ApplicationContext>
-    {
+    {        
             protected override void Seed(ApplicationContext context)
             {
                 PerformInitialSetup(context);
