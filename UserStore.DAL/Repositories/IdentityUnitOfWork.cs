@@ -14,7 +14,7 @@ namespace UserStore.DAL.Repositories
 
         private AppUserManager userManager;
         private AppRoleManager roleManager;
-        private ClientManager clientManager;
+        private ClientRepository clientRepository;
 
 
         private ProductRepository productRepository;
@@ -25,15 +25,23 @@ namespace UserStore.DAL.Repositories
             db = new ApplicationContext(connectionString);
             userManager = new AppUserManager(new UserStore<AppUser>(db));          
             roleManager = new AppRoleManager(new RoleStore<AppRole>(db));
-            clientManager = new ClientManager(db);
+            clientRepository = new ClientRepository(db);
             productRepository = new ProductRepository(db);
             exceptionRepository = new ExceptionRepository(db);
         }
 
         public AppUserManager UserManager => userManager;
 
-        public IClientManager ClientManager => clientManager;
-
+        public IRepository<ClientProfile> Clients
+        {
+            get
+            {
+                if (clientRepository == null)
+                    clientRepository = new ClientRepository(db);
+                return clientRepository;
+            }
+        }
+    
         public AppRoleManager RoleManager => roleManager;
 
         public IRepository<Product> Products
@@ -55,6 +63,8 @@ namespace UserStore.DAL.Repositories
                 return exceptionRepository;
             }
         }
+
+        
 
         public async Task SaveAsync()
         {
@@ -78,7 +88,7 @@ namespace UserStore.DAL.Repositories
                 {
                     userManager.Dispose();
                     roleManager.Dispose();
-                    clientManager.Dispose();
+                    clientRepository.Dispose();
                 }
                 disposed = true;
             }

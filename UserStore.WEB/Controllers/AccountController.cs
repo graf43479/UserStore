@@ -234,97 +234,54 @@ namespace UserStore.WEB.Controllers
             //TODO: метод AddErrors
             //AddErrors(result);         
         }
-
-        //TODO: смена профильных данных
-        public ActionResult EditAccount()
+                
+        public async Task<ActionResult> EditAccount()
         {
-          //  string userName = HttpContext.User.Identity.Name;
-          //взять имя из контекста, вернуть в модель,
-          //приянть обновленную модель и переслать на update
-            RegisterModel model = new RegisterModel();
+            string userName = HttpContext.User.Identity.Name;
+            UserDTO user = await service.GetUserByNameAsync(userName);
+
+            //взять имя из контекста, вернуть в модель,
+            //приянть обновленную модель и переслать на update
+            RegisterModel model = new RegisterModel()
+            {
+                Email = user.Email,
+                Address = user.Address,
+                Name = user.Name
+            };
             
             return View(model);
         }
 
-        //public async Task<ActionResult> Edit(string id)
-        //{
-        //    AppUser user = await UserManager.FindByIdAsync(id);
-        //    if (user != null)
-        //    {
-        //        return View(user);
-        //    }
-        //    else
-        //    {
-        //        return RedirectToAction("Index");
-        //    }
-        //}
-        /*
-         *    public async Task<ActionResult> Edit(string id)
-        {
-            AppUser user = await UserManager.FindByIdAsync(id);
-            if (user != null)
-            {
-                return View(user);
-            }
-            else
-            {
-                return RedirectToAction("Index");
-            }
-        }
 
         [HttpPost]
-        public async Task<ActionResult> Edit(string id, string email, string password)
-        {
-            AppUser user = await UserManager.FindByIdAsync(id);
-            if (user != null)
+        public async Task<ActionResult> EditAccount(RegisterModel model)
+        {            
+            if (!ModelState.IsValid)
             {
-                user.Email = email;
-                IdentityResult validEmail
-                    = await UserManager.UserValidator.ValidateAsync(user);
+                return View(model);
+            }
 
-                if (!validEmail.Succeeded)
-                {
-                    AddErrorsFromResult(validEmail);
-                }
+            
+            OperationDetails result = await service.UpdateUserInfoAsync(new UserDTO()
+                                            {
+                                                          Email = model.Email,
+                                                          UserName = model.Email,
+                                                          Name = model.Name,
+                                                          Address = model.Address,
+                                                          Password = model.Password                                                          
+                                            },
+                                            HttpContext.User.Identity.Name);
 
-                IdentityResult validPass = null;
-                if (password != string.Empty)
-                {
-                    validPass
-                        = await UserManager.PasswordValidator.ValidateAsync(password);
-
-                    if (validPass.Succeeded)
-                    {
-                        user.PasswordHash =
-                            UserManager.PasswordHasher.HashPassword(password);
-                    }
-                    else
-                    {
-                        AddErrorsFromResult(validPass);
-                    }
-                }
-
-                if ((validEmail.Succeeded && validPass == null) ||
-                        (validEmail.Succeeded && password != string.Empty && validPass.Succeeded))
-                {
-                    IdentityResult result = await UserManager.UpdateAsync(user);
-                    if (result.Succeeded)
-                    {
-                        return RedirectToAction("Index");
-                    }
-                    else
-                    {
-                        AddErrorsFromResult(result);
-                    }
-                }
+            if (result.Succedeed)
+            {
+                return RedirectToAction("Index", "Home");
             }
             else
             {
-                ModelState.AddModelError("", "Пользователь не найден");
+                AddErrorsFromResult(result);
+                return View("Error");
             }
-            return View(user);
-        }
-         */
+        }         
 
         [AllowAnonymous]
         public ActionResult CaptchaImage(string prefix, bool noisy = true)

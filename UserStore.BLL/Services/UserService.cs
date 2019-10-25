@@ -57,7 +57,7 @@ namespace UserStore.BLL.Services
                 }
                 
                 ClientProfile clientProfile = new ClientProfile { ClientProfileID = user.Id, Adress = userDto.Address, Name = userDto.Name };
-                Database.ClientManager.Create(clientProfile);
+                Database.Clients.Create(clientProfile);
                 var code = await Database.UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
                 var callbackUrl = callbackUrlBase + "?userId=" + user.Id + "&code=" + HttpUtility.UrlEncode(code);
 
@@ -169,6 +169,127 @@ namespace UserStore.BLL.Services
             return new OperationDetails(true, "Исключение добавлено", "");
         }
 
+        public async Task<UserDTO> GetUserByNameAsync(string userName)
+        {
+            AppUser user = await Database.UserManager.FindByNameAsync(userName);
+            if (user == null)
+                return null;
+            
+            return new UserDTO
+            {
+                Id = user.Id,
+                Address = user.ClientProfile.Adress,
+                Email = user.Email,
+                Name = user.ClientProfile.Name,
+                UserName = user.Email
+            };         
+        }
+
+        public async Task<OperationDetails> UpdateUserInfoAsync(UserDTO userDTO, string name)
+        {
+            OperationDetails details = new OperationDetails();
+            AppUser user = await Database.UserManager.FindByNameAsync(name);
+            user.Email = userDTO.Email;
+            user.UserName = userDTO.Email;
+            user.ClientProfile.Name = userDTO.Name;
+            user.ClientProfile.Adress = userDTO.Address;
+            var validEmail = await Database.UserManager.UserValidator.ValidateAsync(user);
+            if (!validEmail.Succeeded)
+            {
+                details =  new OperationDetails(false, validEmail.Errors.ToArray(), "");
+                //AddErr
+            }
+
+            IdentityResult validPass = null;
+            if (userDTO.Password != string.Empty)
+            {
+                validPass
+                    = await Database.UserManager.PasswordValidator.ValidateAsync(userDTO.Password);
+
+                if (validPass.Succeeded)
+                {
+                    user.PasswordHash =
+                        Database.UserManager.PasswordHasher.HashPassword(userDTO.Password);
+                }
+                else
+                {
+                    details.Succedeed = false;
+                    
+                    //details.Messages.Append(validPass.Errors)
+                    //AddErrorsFromResult(validPass);
+                }
+            }
+
+            if ((validEmail.Succeeded && validPass == null) ||
+                    (validEmail.Succeeded && userDTO.Password != string.Empty && validPass.Succeeded))
+            {                
+                IdentityResult result = await Database.UserManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    return new OperationDetails(true, "Данные пользователя изменены", "");
+                }
+                else
+                {
+                    details.Messages.Append(result.Errors.FirstOrDefault());
+                  //  AddErrorsFromResult(result);
+                }
+            }
+
+            return details;
+        }
+
+        /*
+         *  AppUser user = await UserManager.FindByIdAsync(id);
+            if (user != null)
+            {
+                user.Email = email;
+                IdentityResult validEmail
+                    = await UserManager.UserValidator.ValidateAsync(user);
+
+                if (!validEmail.Succeeded)
+                {
+                    AddErrorsFromResult(validEmail);
+                }
+
+                IdentityResult validPass = null;
+                if (password != string.Empty)
+                {
+                    validPass
+                        = await UserManager.PasswordValidator.ValidateAsync(password);
+
+                    if (validPass.Succeeded)
+                    {
+                        user.PasswordHash =
+                            UserManager.PasswordHasher.HashPassword(password);
+                    }
+                    else
+                    {
+                        AddErrorsFromResult(validPass);
+                    }
+                }
+
+                if ((validEmail.Succeeded && validPass == null) ||
+                        (validEmail.Succeeded && password != string.Empty && validPass.Succeeded))
+                {
+                    IdentityResult result = await UserManager.UpdateAsync(user);
+                    if (result.Succeeded)
+                    {
+                        return RedirectToAction("Index");
+                    }
+                    else
+                    {
+                        AddErrorsFromResult(result);
+                    }
+                }
+            }
+            else
+            {
+                ModelState.AddModelError("", "Пользователь не найден");
+            }
+            return View(user);
+        }
+         */
+
         //начальная инициализация БД
         public async Task SetInitialData(UserDTO adminDto, List<string> roles)
         {
@@ -188,6 +309,6 @@ namespace UserStore.BLL.Services
             Database.Dispose();
         }
 
-       
+      
     }
 }

@@ -29,6 +29,6 @@ namespace UserStore.BLL.Services
             return new OperationDetails(true, "Исключение добавлено", "");
         }
 
-        //TODO: удаление исключений полное, частичное
+        
     }
 }

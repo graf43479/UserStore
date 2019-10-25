@@ -44,20 +44,6 @@ namespace UserStore.WEB.Controllers
             }
         }
 
-        //public async Task<ActionResult> Edit(string id)
-        //{
-        //    AppUser user = await UserManager.FindByIdAsync(id);
-        //    if (user != null)
-        //    {
-        //        return View(user);
-        //    }
-        //    else
-        //    {
-        //        return RedirectToAction("Index");
-        //    }
-        //}
-
-
         public async Task<ActionResult> ExceptionLogger()
         {
             IEnumerable<ExceptionDetailDTO> exceptions = await service.GetLogAsync();         

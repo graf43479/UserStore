@@ -3,6 +3,10 @@ namespace UserStore.BLL.Infrastructure
 {
     public class OperationDetails
     {
+        public OperationDetails()
+        {
+        }
+
         public OperationDetails(bool succedeed, string[] messages, string prop)
         {
             Succedeed = succedeed;
@@ -17,9 +21,9 @@ namespace UserStore.BLL.Infrastructure
             Property = prop;
         }
 
-        public bool Succedeed { get; private set; }
-        public string[] Messages { get; private set; }
-        public string Property { get; private set; }
+        public bool Succedeed { get;  set; }
+        public string[] Messages { get;  set; }
+        public string Property { get;  set; }
 
         
     }

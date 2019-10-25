@@ -23,5 +23,8 @@ namespace UserStore.BLL.Interfaces
         Task<int> CheckForAttemptsAsync(string email);
 
         Task<OperationDetails> CreateExceptionAsync(ExceptionDetailDTO exceptionDetail);
+        
+        Task<UserDTO> GetUserByNameAsync(string userName);
+        Task<OperationDetails> UpdateUserInfoAsync(UserDTO userDTO, string name);
     }
 }
